@@ -1,6 +1,6 @@
 const BOID_RADIUS = 1;
 const BOID_COLOR = "#000000"
-const BOID_COUNT = 300;
+const BOID_COUNT = 100;
 
 class Vec2 {
     constructor(x, y) {
@@ -12,9 +12,17 @@ class Vec2 {
         return new Vec2(this.x + vec.x, this.y + vec.y);
     }
 
+    Substract(vec) {
+        return new Vec2(this.x - vec.x, this.y - vec.y);
+    }
+
     Multiply(n)
     {
         return new Vec2(this.x * n, this.y * n);
+    }
+
+    Square() {
+        return new Vec2(this.x ** 2, this.y ** 2);
     }
 }
 
@@ -53,19 +61,31 @@ function updateBoids(boids, dt)
 {
     boids.forEach(boid =>
     {
-        let nextPos = boid.pos.Add(boid.speedSec.Multiply(dt));
+        let a = boid.speedSec.Multiply(dt);
+        let otherBoids = boids.filter(b => b !== boid);
+        let sepForce = otherBoids.reduce((acc, otherBoid) => 
+        {
+            let posDif = otherBoid.pos.Substract(boid.pos);
+            let dSquareVec = posDif.Square();
+            let dSquare = dSquareVec.x + dSquareVec.y;
+            let resVector = new Vec2(posDif.x / dSquare, posDif.y / dSquare);
+            return acc.Add(resVector);
+        }, new Vec2(0, 0));
+        console.log(sepForce);
 
+        a = a.Substract(sepForce);
+        let nextPos = boid.pos.Add(a);
+        // prevent going outside of border
         if (nextPos.x < 0 || nextPos.x > boid.width)
         {
-            boid.speedSec.x = boid.speedSec.x * -1;
+            a.x = 0;
         }
 
-        if (nextPos.y < 0 || nextPos.y > boid.width)
+        if (nextPos.y < 0 || nextPos.y > boid.height)
         {
-            boid.speedSec.y = boid.speedSec.y * -1;
+            a.y = 0;
         }
-
-        let a = boid.speedSec.Multiply(dt);
+        
         boid.pos = boid.pos.Add(a);
     });
 }
