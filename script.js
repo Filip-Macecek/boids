@@ -29,19 +29,6 @@ class Boid {
 
     update(dt)
     {
-        let nextPos = this.pos.Add(this.speedSec.Multiply(dt));
-
-        if (nextPos.x < 0 || nextPos.x > this.width)
-        {
-            this.speedSec.x = this.speedSec.x * -1;
-        }
-
-        if (nextPos.y < 0 || nextPos.y > this.width)
-        {
-            this.speedSec.y = this.speedSec.y * -1;
-        }
-
-        this.pos = this.pos.Add(this.speedSec.Multiply(dt));
     }
 
     draw(ctx)
@@ -61,6 +48,28 @@ function getRandomVec2(width, height) {
 function getRandomVec2NegativeAlso(x, y) {
     return new Vec2((Math.random() * x * 2) - x, (Math.random() * y * 2) - y);
 }
+
+function updateBoids(boids, dt)
+{
+    boids.forEach(boid =>
+    {
+        let nextPos = boid.pos.Add(boid.speedSec.Multiply(dt));
+
+        if (nextPos.x < 0 || nextPos.x > boid.width)
+        {
+            boid.speedSec.x = boid.speedSec.x * -1;
+        }
+
+        if (nextPos.y < 0 || nextPos.y > boid.width)
+        {
+            boid.speedSec.y = boid.speedSec.y * -1;
+        }
+
+        let a = boid.speedSec.Multiply(dt);
+        boid.pos = boid.pos.Add(a);
+    });
+}
+
 function start() {
     var canvas = document.getElementById('canvas');
     var ctx = canvas.getContext('2d');
@@ -80,9 +89,9 @@ function start() {
     function loop() {
         var now = Date.now();
         var dt = (now - lastTime) / 1000;
-
+        
         console.log(dt);
-        boids.forEach(boid => boid.update(dt));
+        updateBoids(boids, dt)
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         boids.forEach(boid => boid.draw(ctx));
 
