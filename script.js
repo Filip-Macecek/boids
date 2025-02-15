@@ -1,6 +1,7 @@
 const BOID_RADIUS = 1;
 const BOID_COLOR = "#000000"
-const BOID_COUNT = 100;
+const BOID_COUNT = 90;
+const BOID_SEPARATION_DISTANCE = 100;
 
 class Vec2 {
     constructor(x, y) {
@@ -69,24 +70,33 @@ function updateBoids(boids, dt)
             let dSquareVec = posDif.Square();
             let dSquare = dSquareVec.x + dSquareVec.y;
             let resVector = new Vec2(posDif.x / dSquare, posDif.y / dSquare);
-            return acc.Add(resVector);
+
+            if (dSquare < BOID_SEPARATION_DISTANCE)
+            {
+                return acc.Add(resVector);
+            }
+            else {
+                return acc;
+            }
         }, new Vec2(0, 0));
-        console.log(sepForce);
 
         a = a.Substract(sepForce);
-        let nextPos = boid.pos.Add(a);
+        boid.pos = boid.pos.Add(a);
+
         // prevent going outside of border
-        if (nextPos.x < 0 || nextPos.x > boid.width)
+        if (boid.pos.x < 0 || boid.pos.x > boid.width)
         {
-            a.x = 0;
+            a.x *= -1;
+            boid.pos = boid.pos.Add(a);
+            boid.speedSec.x *= -1;
         }
 
-        if (nextPos.y < 0 || nextPos.y > boid.height)
+        if (boid.pos.y < 0 || boid.pos.y > boid.height)
         {
-            a.y = 0;
+            a.y *= -1;
+            boid.pos = boid.pos.Add(a);
+            boid.speedSec.y *= -1;
         }
-        
-        boid.pos = boid.pos.Add(a);
     });
 }
 
@@ -110,7 +120,7 @@ function start() {
         var now = Date.now();
         var dt = (now - lastTime) / 1000;
         
-        console.log(dt);
+        // console.log(dt);
         updateBoids(boids, dt)
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         boids.forEach(boid => boid.draw(ctx));
