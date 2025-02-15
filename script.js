@@ -1,9 +1,10 @@
 const BOID_RADIUS = 1;
 const BOID_COLOR = "#000000"
-const BOID_COUNT = 90;
-const BOID_SEPARATION_SQUARE_DISTANCE = 150;
-const BOID_ALIGNMENT_RADIUS = 150;
-const VELOCITY_ALIGNMENT_FACTOR = 0.1;
+const BOID_COUNT = 250;
+const BOID_NEARBY_RADIUS = 80;
+const SEPARATION_FACTOR = 0.2;
+const VELOCITY_ALIGNMENT_FACTOR = 0.02;
+const COHESION_FACTOR = 0.02;
 
 class Vec2 {
     constructor(x, y) {
@@ -79,34 +80,33 @@ function updateBoids(boids, dt)
     boids.forEach(boid =>
     {
         let otherBoids = boids.filter(b => b !== boid);
-        let sepForce = otherBoids.reduce((acc, otherBoid) => 
-        {
-            let posDif = otherBoid.pos.Substract(boid.pos);
-            let dSquareVec = posDif.Square();
-            let dSquare = dSquareVec.x + dSquareVec.y;
-            let resVector = new Vec2(posDif.x / dSquare, posDif.y / dSquare);
-
-            if (dSquare < BOID_SEPARATION_SQUARE_DISTANCE)
-            {
-                return acc.Add(resVector);
-            }
-            else {
-                return acc;
-            }
-        }, new Vec2(0, 0));
-
+        let sepForce = new Vec2(0, 0);
         let alignmentForce = new Vec2(0, 0);
-        let boidsWithinDistance = otherBoids.filter(b => b.pos.Distance(boid.pos) < BOID_ALIGNMENT_RADIUS);
+        let cohesionForce = new Vec2(0, 0);
+        let boidsWithinDistance = otherBoids.filter(b => b.pos.Distance(boid.pos) < BOID_NEARBY_RADIUS);
         if (boidsWithinDistance.length > 0)
         {
+            sepForce = otherBoids.reduce((acc, otherBoid) => 
+            {
+                let posDif = otherBoid.pos.Substract(boid.pos);
+                let dSquareVec = posDif.Square();
+                let dSquare = dSquareVec.x + dSquareVec.y;
+                let resVector = new Vec2(posDif.x / dSquare, posDif.y / dSquare);
+                return acc.Add(resVector);
+            }, new Vec2(0, 0)).Multiply(SEPARATION_FACTOR);
+
             let otherBoidsAverageVelocity = boidsWithinDistance.reduce((acc, otherBoid) => acc.Add(otherBoid.speedSec), new Vec2(0, 0)).Divide(boidsWithinDistance.length);
             alignmentForce = otherBoidsAverageVelocity.Substract(boid.speedSec).Multiply(VELOCITY_ALIGNMENT_FACTOR);
             // console.log(alignmentForce);
+
+            let otherBoidsAveragePos = boidsWithinDistance.reduce((acc, otherBoid) => acc.Add(otherBoid.pos), new Vec2(0, 0)).Divide(boidsWithinDistance.length);
+            cohesionForce = otherBoidsAveragePos.Substract(boid.pos).Multiply(COHESION_FACTOR);
         }
 
         let a = boid.speedSec.Multiply(dt);
         a = a.Substract(sepForce);
         a = a.Add(alignmentForce);
+        a = a.Add(cohesionForce);
         boid.pos = boid.pos.Add(a);
 
         // prevent going outside of border
