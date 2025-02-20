@@ -72,7 +72,7 @@ function updateBoids(boids, obstacles, dt)
         }
         boid.pos = boid.pos.Add(boid.speedSec.Multiply(dt));
 
-        if (boid.pos.x < 0 || boid.pos.x > width || boid.pos.y < 0 || boid.pos.y > height)
+        if (boid.pos.x < -WALL_MARGIN || boid.pos.x > (width + WALL_MARGIN) || boid.pos.y < -WALL_MARGIN || boid.pos.y > (height + WALL_MARGIN))
         {
             boid.pos = new Vec2(Math.random() * width, Math.random() * height);
         }
