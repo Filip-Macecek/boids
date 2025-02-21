@@ -3,11 +3,15 @@ var height;
 var mid;
 var mousePos = null;
 
-function updateBoids(boids, obstacles, dt)
+function updateBoids(boids, obstacles, tree, dt)
 {
     boids.forEach(boid =>
     {
-        let boidsWithinDistance = boids.filter(b => b.pos.Distance(boid.pos) < BOID_VISIBILITY && b !== boid);
+        let halfVisibility = BOID_VISIBILITY / 2;
+        let queryRect = new Rectangle(boid.pos.x - halfVisibility, boid.pos.y - halfVisibility, BOID_VISIBILITY, BOID_VISIBILITY)
+        let nearbyBoids = []; 
+        tree.get(queryRect, nearbyBoids);
+        let boidsWithinDistance = nearbyBoids.filter(b => b.pos.Distance(boid.pos) < BOID_VISIBILITY && b !== boid);
         let acceleration = new Vec2(0, 0);
 
         if (boidsWithinDistance.length > 0)
@@ -126,15 +130,32 @@ function start() {
 
     let lastTime = Date.now();
 
+    let tree = new QuadTree(new Rectangle(0, 0, width, height), 4);
+    boids.forEach(b => 
+    {
+        if (!tree.insert(b)) throw "Could not insert." + JSON.stringify(b);
+    });
+    console.log(tree);
+
     function loop() {
         let now = Date.now();
         let dt = (now - lastTime) / 1000;
         
-        updateBoids(boids, obstacles, dt, ctx);
+        updateBoids(boids, obstacles, tree, dt);
 
         ctx.clearRect(0, 0, width, height);
         obstacles.forEach(obstacle => obstacle.draw(ctx))
         boids.forEach(boid => boid.draw(ctx));
+        
+        tree = new QuadTree(new Rectangle(0, 0, width, height), QUADTREE_CAPACITY);
+        boids.forEach(b => 
+        {
+            if (!tree.insert(b)) {
+                console.log("Could not insert." + JSON.stringify(b));
+            }
+        });
+
+        tree.draw(ctx);
 
         lastTime = now;
         requestAnimationFrame(loop);
