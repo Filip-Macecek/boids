@@ -26,9 +26,9 @@ class Vec2 {
         return new Vec2(this.x / n, this.y / n);
     }
 
-    Distance(vec)
+    SquareDistance(vec)
     {
-        return Math.sqrt((this.x - vec.x) ** 2 + (this.y - vec.y) ** 2);
+        return (this.x - vec.x) ** 2 + (this.y - vec.y) ** 2;
     }
 
     Normalize()
@@ -45,8 +45,8 @@ class Vec2 {
         return this.x*otherVec.x + this.y*otherVec.y;
     }
 
-    Magnitude() 
+    SquareMagnitude() 
     {
-        return Math.sqrt(this.x ** 2 + this.y ** 2);
+        return this.x ** 2 + this.y ** 2;
     }
 }

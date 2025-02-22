@@ -2,16 +2,25 @@ var width;
 var height;
 var mid;
 var mousePos = null;
+var VISIBILITY_SQUARED = BOID_VISIBILITY ** 2;
+var MAX_SPEED_SQUARED = MAX_SPEED ** 2;
 
 function updateBoids(boids, obstacles, tree, dt)
 {
     boids.forEach(boid =>
     {
-        let halfVisibility = BOID_VISIBILITY / 2;
-        let queryRect = new Rectangle(boid.pos.x - halfVisibility, boid.pos.y - halfVisibility, BOID_VISIBILITY, BOID_VISIBILITY)
-        let nearbyBoids = []; 
-        tree.get(queryRect, nearbyBoids);
-        let boidsWithinDistance = nearbyBoids.filter(b => b.pos.Distance(boid.pos) < BOID_VISIBILITY && b !== boid);
+        let boidsWithinDistance = [];
+        if (QUADTREE_OPTIMIZATION_ENABLED)
+        {
+            let halfVisibility = BOID_VISIBILITY / 2;
+            let queryRect = new Rectangle(boid.pos.x - halfVisibility, boid.pos.y - halfVisibility, BOID_VISIBILITY, BOID_VISIBILITY)
+            let nearbyBoids = tree.get(queryRect);
+            boidsWithinDistance = nearbyBoids.filter(b => b.pos.SquareDistance(boid.pos) < VISIBILITY_SQUARED && b !== boid);
+        }
+        else 
+        {
+            boidsWithinDistance = boids.filter(b => b.pos.SquareDistance(boid.pos) < VISIBILITY_SQUARED && b !== boid);
+        }
         let acceleration = new Vec2(0, 0);
 
         if (boidsWithinDistance.length > 0)
@@ -19,7 +28,7 @@ function updateBoids(boids, obstacles, tree, dt)
             let sepForce = boidsWithinDistance.reduce((acc, otherBoid) => 
             {
                 let posDif = boid.pos.Substract(otherBoid.pos);
-                return acc.Add(posDif.Divide(posDif.Magnitude() ** 2));
+                return acc.Add(posDif.Divide(posDif.SquareMagnitude()));
             }, new Vec2(0, 0)).Multiply(SEPARATION_FACTOR);
             acceleration = acceleration.Add(sepForce.Multiply(dt));
 
@@ -60,17 +69,16 @@ function updateBoids(boids, obstacles, tree, dt)
         if (mousePos != null)
         {
             let dir = boid.pos.Substract(mousePos);
-            let distance = dir.Magnitude();
-            if (distance < BOID_VISIBILITY)
+            let distance = dir.SquareMagnitude();
+            if (distance < VISIBILITY_SQUARED)
             {
-                let avoidAcceleration = dir.Normalize().Multiply(OBSTACLE_FORCE / (distance ** 2));
+                let avoidAcceleration = dir.Normalize().Multiply(OBSTACLE_FORCE / distance);
                 acceleration = acceleration.Add(avoidAcceleration);
             }
         }
 
-
         boid.speedSec = boid.speedSec.Add(acceleration);
-        if (boid.speedSec.Magnitude() > MAX_SPEED)
+        if (boid.speedSec.SquareMagnitude() > MAX_SPEED_SQUARED)
         {
             boid.speedSec = boid.speedSec.Normalize().Multiply(MAX_SPEED);
         }
@@ -130,12 +138,14 @@ function start() {
 
     let lastTime = Date.now();
 
-    let tree = new QuadTree(new Rectangle(0, 0, width, height), 4);
-    boids.forEach(b => 
+    if (QUADTREE_OPTIMIZATION_ENABLED)
     {
-        if (!tree.insert(b)) throw "Could not insert." + JSON.stringify(b);
-    });
-    console.log(tree);
+        var tree = new QuadTree(new Rectangle(0, 0, width, height), 4);
+        boids.forEach(b => 
+        {
+            if (!tree.insert(b)) throw "Could not insert." + JSON.stringify(b);
+        });
+    }
 
     function loop() {
         let now = Date.now();
@@ -147,15 +157,24 @@ function start() {
         obstacles.forEach(obstacle => obstacle.draw(ctx))
         boids.forEach(boid => boid.draw(ctx));
         
-        tree = new QuadTree(new Rectangle(0, 0, width, height), QUADTREE_CAPACITY);
-        boids.forEach(b => 
+        if (QUADTREE_OPTIMIZATION_ENABLED)
         {
-            if (!tree.insert(b)) {
-                console.log("Could not insert." + JSON.stringify(b));
-            }
-        });
+            tree = new QuadTree(new Rectangle(0, 0, width, height), QUADTREE_CAPACITY);
+            boids.forEach(b => 
+            {
+                if (!tree.insert(b)) {
+                    console.log("Could not insert.");
+                }
+            });
 
-        tree.draw(ctx);
+            tree.draw(ctx);
+        }
+
+        
+        let fps = Math.round(1 / dt);
+        ctx.fillStyle = 'white';
+        ctx.font = '16px Arial';
+        ctx.fillText(`FPS: ${fps}`, 10, 30);
 
         lastTime = now;
         requestAnimationFrame(loop);
