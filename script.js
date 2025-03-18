@@ -54,7 +54,7 @@ function updateBoids(boids, obstacles, tree, dt)
         {
             let fromWall = boid.pos.x < WALL_MARGIN ? new Vec2(1, 0) : new Vec2(-1, 0);
             let fromWallDistance = boid.pos.x < WALL_MARGIN ? boid.pos.x : width - boid.pos.x;
-            const fromWallAccel = fromWall.Multiply(OBSTACLE_FORCE).Divide(fromWallDistance ** 2);
+            const fromWallAccel = fromWall.Multiply(OBSTACLE_FORCE * 2).Divide(fromWallDistance ** 2);
             acceleration = acceleration.Add(fromWallAccel.Multiply(dt))
         }
 
@@ -62,7 +62,7 @@ function updateBoids(boids, obstacles, tree, dt)
         {
             let fromWall = boid.pos.y < WALL_MARGIN ? new Vec2(0, 1) : new Vec2(0, -1);
             let fromWallDistance = boid.pos.y < WALL_MARGIN ? boid.pos.y : height - boid.pos.y;
-            const fromWallAccel = fromWall.Multiply(OBSTACLE_FORCE).Divide(fromWallDistance ** 2);
+            const fromWallAccel = fromWall.Multiply(OBSTACLE_FORCE * 2).Divide(fromWallDistance ** 2);
             acceleration = acceleration.Add(fromWallAccel.Multiply(dt))
         }
 
